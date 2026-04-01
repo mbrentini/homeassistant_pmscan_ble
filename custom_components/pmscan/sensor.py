@@ -172,14 +172,34 @@ class NextPmBleCoordinator:
         try:
             _LOGGER.info("PMSCAN: connecté à %s", self._address)
 
-            # ⚠ pair() retiré : peut provoquer une déconnexion sur certains firmwares.
-            # Appairer manuellement une fois via bluetoothctl si nécessaire.
+            # ── Dump des services GATT disponibles (debug) ──────────────────
+            _LOGGER.debug("PMSCAN: services GATT disponibles :")
+            for svc in client.services:
+                _LOGGER.debug("  Service %s", svc.uuid)
+                for ch in svc.characteristics:
+                    _LOGGER.debug(
+                        "    Char %s  props=%s", ch.uuid, ch.properties
+                    )
 
-            _LOGGER.debug("PMSCAN: activation des notifications sur %s", NOTIFY_CHAR_UUID)
-            await client.start_notify(NOTIFY_CHAR_UUID, self._notification_handler)
+            # ── start_notify ────────────────────────────────────────────────
+            _LOGGER.debug("PMSCAN: [1/2] start_notify sur %s …", NOTIFY_CHAR_UUID)
+            try:
+                await client.start_notify(NOTIFY_CHAR_UUID, self._notification_handler)
+                _LOGGER.debug("PMSCAN: [1/2] start_notify OK")
+            except Exception as exc:  # noqa: BLE001
+                _LOGGER.error("PMSCAN: [1/2] start_notify ÉCHEC : %s", exc)
+                return
 
-            _LOGGER.debug("PMSCAN: envoi commande START sur %s", START_CHAR_UUID)
-            await client.write_gatt_char(START_CHAR_UUID, bytes([0x01]), response=True)
+            # ── write START ─────────────────────────────────────────────────
+            _LOGGER.debug("PMSCAN: [2/2] write_gatt_char START sur %s …", START_CHAR_UUID)
+            try:
+                await client.write_gatt_char(
+                    START_CHAR_UUID, bytes([0x01]), response=True
+                )
+                _LOGGER.debug("PMSCAN: [2/2] write_gatt_char OK")
+            except Exception as exc:  # noqa: BLE001
+                _LOGGER.error("PMSCAN: [2/2] write_gatt_char ÉCHEC : %s", exc)
+                return
 
             _LOGGER.info(
                 "PMSCAN: streaming activé (mise à jour HA toutes les %ds).",
