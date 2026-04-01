@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "PMSCAN – Setup",
+        "description": "Click **Submit** to scan for nearby BLE devices."
+      },
+      "scan": {
+        "title": "Select your NextPM device",
+        "description": "{count} device(s) found nearby. Select the one to connect to.",
+        "data": {
+          "device": "Device"
+        }
+      },
+      "confirm": {
+        "title": "Confirm connection",
+        "description": "You are about to add:\n\n**{name}**\nAddress: `{address}`\nSignal: {rssi}\n\nClick **Submit** to confirm.",
+        "data": {}
+      }
+    },
+    "abort": {
+      "already_configured": "This device is already configured.",
+      "no_devices_found": "No BLE devices found nearby. Make sure the device is powered on and try again.",
+      "scan_failed": "BLE scan failed. Check that Bluetooth is enabled on your Home Assistant host.",
+      "device_not_found": "Selected device not found."
+    }
+  }
+}

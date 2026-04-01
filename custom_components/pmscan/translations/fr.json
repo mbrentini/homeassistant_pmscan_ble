@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "PMSCAN – Configuration",
+        "description": "Cliquez sur Valider pour scanner les appareils BLE à proximité."
+      },
+      "scan": {
+        "title": "Sélectionnez votre capteur NextPM",
+        "description": "{count} appareil(s) détecté(s). Sélectionnez celui auquel vous souhaitez vous connecter.",
+        "data": {
+          "device": "Appareil"
+        }
+      },
+      "confirm": {
+        "title": "Confirmer la connexion",
+        "description": "Vous allez ajouter :\n\n**{name}**\nAdresse : `{address}`\nSignal : {rssi}\n\nCliquez sur Valider pour confirmer.",
+        "data": {}
+      }
+    },
+    "abort": {
+      "already_configured": "Cet appareil est déjà configuré.",
+      "no_devices_found": "Aucun appareil BLE trouvé. Vérifiez que le capteur est allumé.",
+      "scan_failed": "Le scan BLE a échoué. Vérifiez que le Bluetooth est activé.",
+      "device_not_found": "L'appareil sélectionné est introuvable."
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "domain": "pmscan",
+  "name": "PMSCAN",
+  "version": "0.1.0",
+  "documentation": "https://github.com/mbrentini/homeassistant_pmscan_ble",
+  "requirements": [],
+  "codeowners": [
+    "@mbrentini"
+  ],
+  "config_flow": true,
+  "iot_class": "local_push",
+  "loggers": [
+    "pmscan"
+  ],
+  "issue_tracker": "https://github.com/mbrentini/homeassistant_pmscan_ble/issues"
+}
