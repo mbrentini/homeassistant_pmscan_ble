@@ -134,18 +134,30 @@ class NextPmBleCoordinator:
 
     async def _connect_and_listen(self) -> None:
         from bleak import BleakScanner, BleakClient  # noqa: PLC0415
+        from bleak.exc import BleakError  # noqa: PLC0415
 
         _LOGGER.info("PMSCAN: connexion à %s (%s)", self._device_name, self._address)
 
         # RSSI avant connexion
         await self._refresh_rssi(BleakScanner)
 
-        client = BleakClient(self._address)
+        client = BleakClient(
+            self._address,
+            disconnected_callback=lambda _: _LOGGER.warning(
+                "PMSCAN: déconnexion inattendue de %s", self._address
+            ),
+        )
         self._client = client
 
         try:
-            await client.connect()
+            await client.connect(timeout=20.0)
             _LOGGER.info("PMSCAN: connecté à %s", self._address)
+            # Appairage si requis par le firmware
+            try:
+                await client.pair()
+                _LOGGER.debug("PMSCAN: appairage OK")
+            except Exception as exc:  # noqa: BLE001
+                _LOGGER.debug("PMSCAN: pair() ignoré (%s)", exc)
             await client.start_notify(NOTIFY_CHAR_UUID, self._notification_handler)
             await client.write_gatt_char(START_CHAR_UUID, bytes([0x01]), response=True)
             _LOGGER.info("PMSCAN: streaming activé (mise à jour HA toutes les %ds).", UPDATE_INTERVAL)
@@ -159,8 +171,11 @@ class NextPmBleCoordinator:
                     await self._refresh_rssi(BleakScanner)
 
         finally:
-            if client.is_connected:
-                await client.disconnect()
+            try:
+                if client.is_connected:
+                    await client.disconnect()
+            except Exception as exc:  # noqa: BLE001
+                _LOGGER.debug("PMSCAN: erreur déconnexion: %s", exc)
             _LOGGER.info("PMSCAN: déconnecté de %s", self._address)
 
     def _parse_frame(self, raw: bytes) -> NextPmValues | None:
@@ -183,7 +198,13 @@ class NextPmBleCoordinator:
 
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Reçoit chaque trame BLE — ne met à jour HA que si l'intervalle est écoulé."""
-        vals = self._parse_frame(bytes(data))
+        raw = bytes(data)
+        _LOGGER.debug(
+            "PMSCAN raw frame (%d bytes): %s",
+            len(raw),
+            " ".join(f"{b:02X}" for b in raw),
+        )
+        vals = self._parse_frame(raw)
         if vals is None:
             return
         self.values = vals
