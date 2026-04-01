@@ -163,16 +163,19 @@ class NextPmBleCoordinator:
             _LOGGER.info("PMSCAN: déconnecté de %s", self._address)
 
     def _parse_frame(self, raw: bytes) -> NextPmValues | None:
-        if len(raw) < 20 or raw[5] != 0x11:
+        # Trame BLE : 4 octets header | 0x81 adresse | cmd | état | données | checksum
+        # cmd accepté : 0x11 (10s), 0x12 (60s), 0x13 (15min)
+        # Données PM encodées en big-endian (protocole série Tera Sensor)
+        if len(raw) < 20 or raw[5] not in (0x11, 0x12, 0x13):
             return None
         return NextPmValues(
-            counter   = int.from_bytes(raw[0:2],   "little"),
+            counter   = int.from_bytes(raw[0:2],   "little"),   # header BLE, little-endian
             state     = raw[6],
-            pm1_pcsl  = int.from_bytes(raw[7:9],   "little"),
-            pm25_pcsl = int.from_bytes(raw[9:11],  "little"),
-            pm10_pcsl = int.from_bytes(raw[11:13], "little"),
-            pm1_ugm3  = round(int.from_bytes(raw[13:15], "little") * 0.1, 1),
-            pm25_ugm3 = round(int.from_bytes(raw[15:17], "little") * 0.1, 1),
+            pm1_pcsl  = int.from_bytes(raw[7:9],   "big"),
+            pm25_pcsl = int.from_bytes(raw[9:11],  "big"),
+            pm10_pcsl = int.from_bytes(raw[11:13], "big"),
+            pm1_ugm3  = round(int.from_bytes(raw[13:15], "big") * 0.1, 1),
+            pm25_ugm3 = round(int.from_bytes(raw[15:17], "big") * 0.1, 1),
             rssi      = self.values.rssi,
         )
 
