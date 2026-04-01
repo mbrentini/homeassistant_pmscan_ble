@@ -48,6 +48,7 @@ class NextPmValues:
     pm10_pcsl: int | None = None
     pm1_ugm3: float | None = None
     pm25_ugm3: float | None = None
+    pm10_ugm3: float | None = None
     rssi: int | None = None
 
 
@@ -176,6 +177,7 @@ class NextPmBleCoordinator:
             pm10_pcsl = int.from_bytes(raw[11:13], "big"),
             pm1_ugm3  = round(int.from_bytes(raw[13:15], "big") * 0.1, 1),
             pm25_ugm3 = round(int.from_bytes(raw[15:17], "big") * 0.1, 1),
+            pm10_ugm3 = round(int.from_bytes(raw[17:19], "big") * 0.1, 1),
             rssi      = self.values.rssi,
         )
 
@@ -234,7 +236,8 @@ class NextPmBleSensor(SensorEntity):
             self._attr_native_unit_of_measurement = UNIT_MICROGRAMS_M3
             self._attr_device_class = SensorDeviceClass.PM25
         elif kind == "pm10_pcsl":
-            self._attr_native_unit_of_measurement = UNIT_PCSL
+            self._attr_native_unit_of_measurement = UNIT_MICROGRAMS_M3
+            self._attr_device_class = SensorDeviceClass.PM10
         elif kind == "rssi":
             self._attr_native_unit_of_measurement = UNIT_DBM
             self._attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
@@ -258,7 +261,7 @@ class NextPmBleSensor(SensorEntity):
         match self._kind:
             case "pm1":       return v.pm1_ugm3
             case "pm25":      return v.pm25_ugm3
-            case "pm10_pcsl": return v.pm10_pcsl
+            case "pm10_pcsl": return v.pm10_ugm3
             case "rssi":      return v.rssi
         return None
 
