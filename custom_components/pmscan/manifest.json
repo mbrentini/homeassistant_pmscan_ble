@@ -3,7 +3,9 @@
   "name": "PMSCAN",
   "version": "0.1.0",
   "documentation": "https://github.com/mbrentini/homeassistant_pmscan_ble",
-  "requirements": [],
+  "requirements": [
+    "bleak-retry-connector>=3.0.0"
+  ],
   "codeowners": [
     "@mbrentini"
   ],
@@ -12,5 +14,8 @@
   "loggers": [
     "pmscan"
   ],
-  "issue_tracker": "https://github.com/mbrentini/homeassistant_pmscan_ble/issues"
+  "issue_tracker": "https://github.com/mbrentini/homeassistant_pmscan_ble/issues",
+  "bluetooth": [
+    {}
+  ]
 }
