@@ -172,15 +172,15 @@ class NextPmBleCoordinator:
         try:
             _LOGGER.info("PMSCAN: connecté à %s", self._address)
 
-            # Appairage si requis par le firmware
-            try:
-                await client.pair()
-                _LOGGER.debug("PMSCAN: appairage OK")
-            except Exception as exc:  # noqa: BLE001
-                _LOGGER.debug("PMSCAN: pair() ignoré (%s)", exc)
+            # ⚠ pair() retiré : peut provoquer une déconnexion sur certains firmwares.
+            # Appairer manuellement une fois via bluetoothctl si nécessaire.
 
+            _LOGGER.debug("PMSCAN: activation des notifications sur %s", NOTIFY_CHAR_UUID)
             await client.start_notify(NOTIFY_CHAR_UUID, self._notification_handler)
+
+            _LOGGER.debug("PMSCAN: envoi commande START sur %s", START_CHAR_UUID)
             await client.write_gatt_char(START_CHAR_UUID, bytes([0x01]), response=True)
+
             _LOGGER.info(
                 "PMSCAN: streaming activé (mise à jour HA toutes les %ds).",
                 UPDATE_INTERVAL,
