@@ -133,92 +133,34 @@ class NextPmBleCoordinator:
             _LOGGER.debug("PMSCAN: RSSI non récupéré: %s", exc)
 
     async def _connect_and_listen(self) -> None:
-        from bleak import BleakScanner  # noqa: PLC0415
-        from bleak_retry_connector import (  # noqa: PLC0415
-            establish_connection,
-            BleakClientWithServiceCache,
-        )
-        from homeassistant.components import bluetooth  # noqa: PLC0415
+        from bleak import BleakScanner, BleakClient  # noqa: PLC0415
 
         _LOGGER.info("PMSCAN: connexion à %s (%s)", self._device_name, self._address)
 
         # RSSI avant connexion
         await self._refresh_rssi(BleakScanner)
 
-        # Récupérer le BLEDevice depuis le stack Bluetooth de HA (proxy ESPHome inclus)
-        ble_device = bluetooth.async_ble_device_from_address(
-            self._hass, self._address, connectable=True
-        )
-        if ble_device is None:
-            # Fallback : scan direct
-            ble_device = await BleakScanner.find_device_by_address(
-                self._address, timeout=10
-            )
-        if ble_device is None:
-            raise RuntimeError(f"PMSCAN: appareil {self._address} introuvable")
-
-        def _on_disconnect(_client: object) -> None:
-            _LOGGER.warning("PMSCAN: déconnexion inattendue de %s", self._address)
-
-        client = await establish_connection(
-            BleakClientWithServiceCache,
-            ble_device,
-            self._address,
-            disconnected_callback=_on_disconnect,
-            max_attempts=3,
-        )
+        client = BleakClient(self._address)
         self._client = client
 
         try:
+            await client.connect()
             _LOGGER.info("PMSCAN: connecté à %s", self._address)
-
-            # ── Dump des services GATT disponibles (debug) ──────────────────
-            _LOGGER.debug("PMSCAN: services GATT disponibles :")
-            for svc in client.services:
-                _LOGGER.debug("  Service %s", svc.uuid)
-                for ch in svc.characteristics:
-                    _LOGGER.debug(
-                        "    Char %s  props=%s", ch.uuid, ch.properties
-                    )
-
-            # ── start_notify ────────────────────────────────────────────────
-            _LOGGER.debug("PMSCAN: [1/2] start_notify sur %s …", NOTIFY_CHAR_UUID)
-            try:
-                await client.start_notify(NOTIFY_CHAR_UUID, self._notification_handler)
-                _LOGGER.debug("PMSCAN: [1/2] start_notify OK")
-            except Exception as exc:  # noqa: BLE001
-                _LOGGER.error("PMSCAN: [1/2] start_notify ÉCHEC : %s", exc)
-                return
-
-            # ── write START ─────────────────────────────────────────────────
-            _LOGGER.debug("PMSCAN: [2/2] write_gatt_char START sur %s …", START_CHAR_UUID)
-            try:
-                await client.write_gatt_char(
-                    START_CHAR_UUID, bytes([0x01]), response=True
-                )
-                _LOGGER.debug("PMSCAN: [2/2] write_gatt_char OK")
-            except Exception as exc:  # noqa: BLE001
-                _LOGGER.error("PMSCAN: [2/2] write_gatt_char ÉCHEC : %s", exc)
-                return
-
-            _LOGGER.info(
-                "PMSCAN: streaming activé (mise à jour HA toutes les %ds).",
-                UPDATE_INTERVAL,
-            )
+            await client.start_notify(NOTIFY_CHAR_UUID, self._notification_handler)
+            await client.write_gatt_char(START_CHAR_UUID, bytes([0x01]), response=True)
+            _LOGGER.info("PMSCAN: streaming activé (mise à jour HA toutes les %ds).", UPDATE_INTERVAL)
 
             tick = 0
             while not self._stop_event.is_set() and client.is_connected:
                 await asyncio.sleep(1)
                 tick += 1
+                # Rafraîchir le RSSI toutes les UPDATE_INTERVAL secondes
                 if tick % UPDATE_INTERVAL == 0:
                     await self._refresh_rssi(BleakScanner)
 
         finally:
-            try:
-                if client.is_connected:
-                    await client.disconnect()
-            except Exception as exc:  # noqa: BLE001
-                _LOGGER.debug("PMSCAN: erreur déconnexion: %s", exc)
+            if client.is_connected:
+                await client.disconnect()
             _LOGGER.info("PMSCAN: déconnecté de %s", self._address)
 
     def _parse_frame(self, raw: bytes) -> NextPmValues | None:
@@ -241,13 +183,7 @@ class NextPmBleCoordinator:
 
     def _notification_handler(self, _sender: int, data: bytearray) -> None:
         """Reçoit chaque trame BLE — ne met à jour HA que si l'intervalle est écoulé."""
-        raw = bytes(data)
-        _LOGGER.debug(
-            "PMSCAN raw frame (%d bytes): %s",
-            len(raw),
-            " ".join(f"{b:02X}" for b in raw),
-        )
-        vals = self._parse_frame(raw)
+        vals = self._parse_frame(bytes(data))
         if vals is None:
             return
         self.values = vals
