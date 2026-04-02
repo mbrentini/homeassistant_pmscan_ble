@@ -1,5 +1,5 @@
 {
-  "name": "PMSCAN",
-  "render_readme": true,
-  "homeassistant": "2024.1.0"
+  "name": "TERA PMScan",
+  "category": "integration",
+  "render_readme": true
 }
