@@ -9,5 +9,5 @@ CONF_ADDRESS      = "address"
 CONF_RH_OFFSET    = "rh_offset"
 DEFAULT_RH_OFFSET = 0.0
 
-RECONNECT_INTERVAL = 10
-BATTERY_INTERVAL   = 300
+RECONNECT_INTERVAL = 10   # seconds between reconnect attempts
+BATTERY_INTERVAL   = 300  # seconds between battery reads

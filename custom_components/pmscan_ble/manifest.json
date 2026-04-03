@@ -1,7 +1,7 @@
 {
   "domain": "pmscan_ble",
   "name": "TERA PMScan",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "documentation": "https://github.com/mbrentini/homeassistant_pmscan_ble",
   "requirements": [],
   "dependencies": ["bluetooth"],
